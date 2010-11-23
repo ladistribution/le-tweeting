@@ -1,0 +1,7 @@
+.htaccess
+dist/.htaccess
+dist/config.php
+dist/configuration.json
+dist/instance.json
+dist/roles.json
+
