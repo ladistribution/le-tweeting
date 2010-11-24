@@ -1,7 +1,4 @@
-<?php
-global $site, $application;
-$configuration = $application->getConfiguration();
-?>
+<?php $configuration = $application->getConfiguration(); ?>
 
 <?php if (empty($configuration['consumerKey']) || empty($configuration['consumerSecret'])) : ?>
 
@@ -44,7 +41,7 @@ $configuration = $application->getConfiguration();
         </tr>
     </table>
 
-    <p>Once done, edit the <a href="<?php echo Ld_Ui::getInstanceSettingsUrl($application, 'configure') ?>">application settings</a>
+    <p>Once done, edit the <a href="<?php echo Ld_Ui::getApplicationSettingsUrl() ?>">application settings</a>
         and update the consumerKey and consumerSecret.</p>
 
 <?php elseif (empty($configuration['access_token'])) : ?>
