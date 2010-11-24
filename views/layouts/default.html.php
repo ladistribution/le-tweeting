@@ -26,9 +26,7 @@
 
         <h1 class="h6e-page-title"><?php echo $application->getName() ?></h1>
 
-        <ul class="ld-nav">
-            <li><a href="<?php echo Ld_Ui::getInstanceSettingsUrl() ?>">Settings</a></li>
-        </ul>
+        <?php Ld_Ui::topNav(); ?>
 
         <?php if (isset($hasMenu)) : ?>
         <ul class="h6e-tabs">
