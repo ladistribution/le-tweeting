@@ -26,8 +26,7 @@ function before()
 
 function getConfig()
 {
-    global $application;
-    $configuration = $application->getConfiguration();
+    global $application, $configuration;
     $config = array(
         'siteUrl' => 'http://twitter.com/oauth',
         'callbackUrl' => $application->getUrl() . 'callback',
@@ -43,29 +42,21 @@ function getConsumer()
     return $consumer;
 }
 
-// function getTwitter()
-// {
-//     $config = getConfig();
-//     $config['accessToken'] = getAccessToken();
-//     return new Zend_Service_Twitter($config);
-// }
-
 function getAccessToken()
 {
-    global $application;
-    $config = $application->getConfiguration();
-    if (empty($config['access_token'])) {
-        redirect_to('setup');
-        return;
+    global $application, $configuration;
+    if (empty($configuration['access_token'])) {
+        return null;
     }
-    return unserialize($config['access_token']);
+    return unserialize($configuration['access_token']);
 }
 
 function getStatuses($timeline = 'friends_timeline', $params = array())
 {
-    global $cache;
+    global $application, $cache;
     if ($cache) {
-        $tweets = $cache->load($timeline);
+        $cacheKey = $application->getId() . '_' . $timeline;
+        $tweets = $cache->load($cacheKey);
     }
     if (empty($tweets)) {
         $token = getAccessToken();
@@ -74,8 +65,7 @@ function getStatuses($timeline = 'friends_timeline', $params = array())
         foreach ($params as $key => $value) {
             $client->setParameterGet($key, $value);
         }
-        $client->setMethod(Zend_Http_Client::GET);
-        $response = $client->request();
+        $response = $client->request(Zend_Http_Client::GET);
         $tweets = Zend_Json::decode($response->getBody(), Zend_Json::TYPE_OBJECT);
         if ($cache) {
             $cache->save($tweets);
@@ -84,99 +74,126 @@ function getStatuses($timeline = 'friends_timeline', $params = array())
     return $tweets;
 }
 
-function is_admin()
+function isAdmin()
 {
     global $application;
     return Ld_Auth::isAuthenticated() && $application->getUserRole() == 'administrator';
 }
 
-function text($t)
+function screenName()
 {
-    // http://www.barattalo.it/2010/03/10/php-parse-url-mailto-and-also-twitters-usernames-and-arguments/
+    if ($accessToken = getAccessToken()) {
+        return $accessToken->screen_name;
+    }
+}
 
-    // link URLs
-    $t = " ".preg_replace( "/(([[:alnum:]]+:\/\/)|www\.)([^[:space:]]*)".
-        "([[:alnum:]#?\/&=])/i", "<a href=\"\\1\\3\\4\" target=\"_blank\">".
-        "\\1\\3\\4</a>", $t);
+function maxItems()
+{
+    global $application, $configuration;
+    $maxItems = isset($configuration['maxItems']) ? (int)$configuration['maxItems'] : 25;
+    if ($maxItems <= 0 || $maxItems >= 200) {
+        $maxItems = 25;
+    }
+    return $maxItems;
+}
 
-    // link twitter users
-    $t = preg_replace( "/ +@([a-z0-9_]*) ?/i", " <a href=\"http://twitter.com/\\1\">@\\1</a> ", $t);
-
-    // $base_url = base_url();
-    // $t = preg_replace( "/ +@([a-z0-9_]*) ?/i", " <a href=\"{$base_url}user/\\1\">@\\1</a> ", $t);
-
-    // link twitter arguments
-    $t = preg_replace( "/ +#([a-z0-9_]*) ?/i", " <a href=\"http://twitter.com/search?q=%23\\1\" target=\"_blank\">#\\1</a> ", $t);
-
-    // truncates long urls that can cause display problems (optional)
-    $t = preg_replace("/>(([[:alnum:]]+:\/\/)|www\.)([^[:space:]]".
-        "{30,40})([^[:space:]]*)([^[:space:]]{10,20})([[:alnum:]#?\/&=])".
-        "</", ">\\3...\\5\\6<", $t);
-    return trim($t);
+function text($text)
+{
+    // link it
+    $text = preg_replace("/(^|[\n ])([\w]*?)((ht|f)tp(s)?:\/\/[\w]+[^ \,\"\n\r\t<]*)/is", "$1$2<a href=\"$3\" >$3</a>", $text);
+    $text = preg_replace("/(^|[\n ])([\w]*?)((www|ftp)\.[^ \,\"\t\n\r<]*)/is", "$1$2<a href=\"http://$3\" >$3</a>", $text);
+    // twitter it
+    $text = preg_replace("/@(\w+)/", '<a href="http://www.twitter.com/$1" target="_blank">@$1</a>', $text);
+    $text = preg_replace("/\#(\w+)/", '<a href="http://search.twitter.com/search?q=$1" target="_blank">#$1</a>', $text);
+    return trim($text);
 }
 
 function render_template($controller = "posts", $action = "index")
 {
-    $format = isset($_GET['format']) ? $_GET['format'] : 'html';
-    if ($format == 'html') {
-        return html("$controller/$action.html.php");
-    } elseif ($format == 'atom') {
-        return xml("$controller/$action.atom.php", null);
-    }
-    return render("Unknown format");
+    return html("$controller/$action.html.php");
+}
+
+function send_error($error)
+{
+    set('error', $error);
+    return html("error.html.php");
 }
 
 dispatch('/', 'index');
 
 function index()
 {
-    if (is_admin()) {
-        return timeline();
-    } else {
-        return tweets();
+    if (isAdmin()) {
+        return redirect_to('/timeline');
     }
+    return tweets();
 }
 
 dispatch('/timeline', 'timeline');
 
 function timeline()
 {
-    if (!is_admin()) {
+    if (!getAccessToken()) {
+        return redirect_to('/setup');
+    }
+    if (!isAdmin()) {
         redirect_to('/');
     }
-    set('tweets', getStatuses('friends_timeline'));
-    set('isTimeline', true);
-    if (is_admin()) {
-        set('hasMenu', true);
+    $params = array('count' => maxItems());
+    $tweets = getStatuses('home_timeline', $params);
+    if (isset($tweets->error)) {
+        return send_error($tweets->error);
     }
+    set('tweets', $tweets);
+    set('isTimeline', true);
+    set('hasMenu', true);
     return render_template("posts");
 }
 
 dispatch('/tweets', 'tweets');
 
-dispatch('/your-tweets', 'tweets');
+if ($accessToken = getAccessToken()) {
+    dispatch('/' . $accessToken->screen_name, 'tweets');
+}
 
 function tweets()
 {
-    set('tweets',  getStatuses('user_timeline'));
+    if (!getAccessToken()) {
+        return redirect_to('/setup');
+    }
+    $params = array('count' => maxItems());
+    $tweets = getStatuses('user_timeline', $params);
+    set('tweets', $tweets);
     set('isTweets', true);
-    if (is_admin()) {
+    if (isAdmin()) {
         set('hasMenu', true);
     }
     return render_template("posts");
+}
+
+dispatch('/feed', 'feed');
+
+function feed()
+{
+    $timeline = isAdmin() && getAccessToken() ? 'home_timeline' : 'user_timeline';
+    $params = array('count' => maxItems());
+    $tweets = getStatuses($timeline, $params);
+    set('tweets', $tweets);
+    return xml("posts/index.atom.php", null);
 }
 
 dispatch('/setup', 'setup');
 
 function setup()
 {
-    if (!is_admin()) {
+    global $application, $configuration;
+    if (!isAdmin()) {
         return render("Not authorized");
     }
     if (isset($_GET['reset'])) {
-        $configuration = $application->getConfiguration();
         $configuration['access_token'] = null;
         $application->setConfiguration($configuration);
+        redirect_to('setup');
     }
     return html('setup.html.php');
 }
@@ -185,14 +202,13 @@ dispatch('/authenticate', 'authenticate');
 
 function authenticate()
 {
-    global $application;
+    global $application, $configuration;
 
     $consumer = getConsumer();
     $token = $consumer->getRequestToken();
 
-    $config = $application->getConfiguration();
-    $config['request_token'] = serialize($token);
-    $application->setConfiguration($config);
+    $configuration['request_token'] = serialize($token);
+    $application->setConfiguration($configuration);
 
     $consumer->redirect();
 }
@@ -201,16 +217,14 @@ dispatch('/callback', 'callback');
 
 function callback()
 {
-    global $application;
-
-    $config = $application->getConfiguration();
+    global $application, $configuration;
 
     $consumer = getConsumer();
-    $token = $consumer->getAccessToken($_GET, unserialize($config['request_token']));
+    $token = $consumer->getAccessToken($_GET, unserialize($configuration['request_token']));
 
-    $config['access_token'] = serialize($token);
-    $config['request_token'] = null;
-    $application->setConfiguration($config);
+    $configuration['access_token'] = serialize($token);
+    $configuration['request_token'] = null;
+    $application->setConfiguration($configuration);
 
     redirect_to('/');
 }

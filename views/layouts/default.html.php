@@ -16,6 +16,10 @@
   <style type="text/css">
   .h6e-block { padding:1em; }
   .user-name { opacity:0.5; }
+  .ld-feed .hentry .entry-inner { width:auto; }
+  .ld-feed .h6e-post-info { opacity:0.5; }
+  .ld-merger .hentry.tweet { padding-bottom:5px; margin-bottom:5px; }
+  .ld-merger .avatar { margin-top:2px; }
   </style>
 </head>
 <body class="ld-layout h6e-layout">
@@ -30,8 +34,8 @@
 
         <?php if (isset($hasMenu)) : ?>
         <ul class="h6e-tabs">
-            <li <?php if (isset($isTimeline)) echo 'class="active"' ?>><a href="<?php echo url_for('timeline') ?>">Timeline</a></li>
-            <li <?php if (isset($isTweets)) echo 'class="active"' ?>><a href="<?php echo url_for('your-tweets') ?>">Your Tweets</a></li>
+            <li <?php if (isset($isTimeline)) echo 'class="active"' ?>><a href="<?php echo url_for('timeline') ?>">Home Timeline</a></li>
+            <li <?php if (isset($isTweets)) echo 'class="active"' ?>><a href="<?php echo url_for(screenName()) ?>">@<?php echo screenName() ?> Timeline</a></li>
         </ul>
         <?php endif ?>
 

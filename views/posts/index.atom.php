@@ -1,9 +1,9 @@
 <?php
-$configuration = $application->getConfiguration();
-
+global $configuration;
 if (isset($configuration['associatedUser'])) {
     $associatedUser = $site->getUser($configuration['associatedUser']);
 }
+$accessToken = getAccessToken();
 ?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:ld="http://ladistribution.net/#ns">
 <id></id>
@@ -14,9 +14,12 @@ if (isset($configuration['associatedUser'])) {
     <entry>
         <id></id>
         <title><?php echo htmlspecialchars($tweet->text) ?></title>
-        <content type="html"><![CDATA[<?php echo text($tweet->text) ?>]]></content>
-<?php if (isset($associatedUser)) : ?>
+        <summary type="html"><![CDATA[<?php echo text($tweet->text) ?>]]></summary>
+<?php if (isset($associatedUser) && $tweet->user->screen_name == $accessToken->screen_name) : ?>
         <ld:username><?php echo $associatedUser['username'] ?></ld:username>
+<?php else : ?>
+        <ld:avatar><?php echo $tweet->user->profile_image_url ?></ld:avatar>
+        <ld:userurl>http://twitter.com/<?php echo $tweet->user->screen_name ?></ld:userurl>
 <?php endif ?>
         <author>
             <name><?php echo $tweet->user->screen_name ?></name>

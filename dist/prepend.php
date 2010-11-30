@@ -1,8 +1,13 @@
 <?php
 require_once dirname(__FILE__) . '/config.php';
+
 $site = Zend_Registry::get('site');
+
 $application = $site->getInstance( dirname(__FILE__) . '/..' );
 Zend_Registry::set('application', $application);
+
+$configuration = $application->getConfiguration();
+
 $cacheDirectory = LD_TMP_DIR . '/cache/';
 Ld_Files::createDirIfNotExists($cacheDirectory);
 if (file_exists($cacheDirectory) && is_writable($cacheDirectory)) {

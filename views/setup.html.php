@@ -1,4 +1,4 @@
-<?php $configuration = $application->getConfiguration(); ?>
+<?php global $configuration; ?>
 
 <?php if (empty($configuration['consumerKey']) || empty($configuration['consumerSecret'])) : ?>
 
