@@ -18,9 +18,10 @@ function configure()
 
 function before()
 {
-    global $site, $application;
+    global $site, $application, $configuration;
     set('site', $site);
     set('application', $application);
+    set('configuration', $configuration);
     layout('layouts/default.html.php');
 }
 
