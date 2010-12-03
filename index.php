@@ -188,9 +188,11 @@ dispatch('/setup', 'setup');
 function setup()
 {
     global $application, $configuration;
+
     if (!isAdmin()) {
         return render("Not authorized");
     }
+
     if (isset($_GET['reset'])) {
         $configuration['access_token'] = null;
         $application->setConfiguration($configuration);
@@ -205,8 +207,16 @@ function authenticate()
 {
     global $application, $configuration;
 
-    $consumer = getConsumer();
-    $token = $consumer->getRequestToken();
+    if (!isAdmin()) {
+        return render("Not authorized");
+    }
+
+    try {
+        $consumer = getConsumer();
+        $token = $consumer->getRequestToken();
+    } catch (Exception $e) {
+        send_error($e);
+    }
 
     $configuration['request_token'] = serialize($token);
     $application->setConfiguration($configuration);
@@ -220,8 +230,16 @@ function callback()
 {
     global $application, $configuration;
 
-    $consumer = getConsumer();
-    $token = $consumer->getAccessToken($_GET, unserialize($configuration['request_token']));
+    if (!isAdmin()) {
+        return render("Not authorized");
+    }
+
+    try {
+        $consumer = getConsumer();
+        $token = $consumer->getAccessToken($_GET, unserialize($configuration['request_token']));
+    } catch (Exception $e) {
+        send_error($e);
+    }
 
     $configuration['access_token'] = serialize($token);
     $configuration['request_token'] = null;
