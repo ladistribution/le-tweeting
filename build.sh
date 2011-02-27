@@ -13,7 +13,12 @@ cp dist/manifest.xml $BUILD/dist
 cp dist/installer.php $BUILD/dist
 cp dist/prepend.php $BUILD/dist
 cp index.php $BUILD/$FOLDER
+cp twitter.php $BUILD/$FOLDER
+cp -R css $BUILD/$FOLDER
+cp -R js $BUILD/$FOLDER
 cp -R views $BUILD/$FOLDER
+cp icon.png $BUILD/$FOLDER
+cp ld-icon.png $BUILD/$FOLDER
 
 # Remove some unwanted files (mac)
 find . -name '*.DS_Store' -type f -delete

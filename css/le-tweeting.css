@@ -1,0 +1,12 @@
+.h6e-block { padding:1em; }
+.user-name { opacity:0.7; }
+.h6e-main-content { width:525px; }
+.ld-feed .hentry .entry-inner { width:450px; }
+.ld-feed .h6e-post-info { opacity:0.7; }
+.ld-feed .retweeted-by { font-size:10px; opacity:0.7; }
+.ld-merger .hentry.tweet { padding-bottom:5px; margin-bottom:5px; }
+.ld-merger .avatar { margin-top:2px; }
+.tweet-form h3 { margin-bottom:0.25em; }
+.tweet-form .tweet-status { width:513px; height:2em; display:block; font-size:13px; padding:5px; }
+.tweet-form input { float:right; }
+.ld-merger .hentry.tweet:last-child { border:none; }

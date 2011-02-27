@@ -4,12 +4,13 @@ require_once dirname(__FILE__) . '/dist/prepend.php';
 
 require_once 'limonade.php';
 
+require_once 'twitter.php';
+
 function configure()
 {
     global $site, $application;
     option('base_uri',      $site->getPath() . '/' . $application->getPath() );
     option('session',       false);
-    error_reporting(E_ALL);
     if (define('LD_DEBUG') && constant('LD_DEBUG')) {
         option('debug',         true);
         option('env',           ENV_DEVELOPMENT);
@@ -23,95 +24,6 @@ function before()
     set('application', $application);
     set('configuration', $configuration);
     layout('layouts/default.html.php');
-}
-
-function getConfig()
-{
-    global $application, $configuration;
-    $config = array(
-        'siteUrl' => 'http://twitter.com/oauth',
-        'callbackUrl' => $application->getUrl() . 'callback',
-        'consumerKey' => $configuration['consumerKey'],
-        'consumerSecret' => $configuration['consumerSecret'],
-    );
-    return $config;
-}
-
-function getConsumer()
-{
-    $consumer = new Zend_Oauth_Consumer( getConfig() );
-    return $consumer;
-}
-
-function getAccessToken()
-{
-    global $application, $configuration;
-    if (empty($configuration['access_token'])) {
-        return null;
-    }
-    return unserialize($configuration['access_token']);
-}
-
-function getStatuses($timeline = 'friends_timeline', $params = array())
-{
-    global $application, $cache;
-    if ($cache) {
-        $cacheKey = $application->getId() . '_' . $timeline;
-        $tweets = $cache->load($cacheKey);
-    }
-    if (empty($tweets)) {
-        $token = getAccessToken();
-        $client = $token->getHttpClient( getConfig() );
-        $client->setUri("http://twitter.com/statuses/$timeline.json");
-        foreach ($params as $key => $value) {
-            $client->setParameterGet($key, $value);
-        }
-        $response = $client->request(Zend_Http_Client::GET);
-        $tweets = Zend_Json::decode($response->getBody(), Zend_Json::TYPE_OBJECT);
-        if ($cache) {
-            $cache->save($tweets);
-        }
-    }
-    return $tweets;
-}
-
-function isAdmin()
-{
-    global $application;
-    return Ld_Auth::isAuthenticated() && $application->getUserRole() == 'administrator';
-}
-
-function screenName()
-{
-    if ($accessToken = getAccessToken()) {
-        return $accessToken->screen_name;
-    }
-}
-
-function maxItems()
-{
-    global $application, $configuration;
-    $maxItems = isset($configuration['maxItems']) ? (int)$configuration['maxItems'] : 25;
-    if ($maxItems <= 0 || $maxItems >= 200) {
-        $maxItems = 25;
-    }
-    return $maxItems;
-}
-
-function text($text)
-{
-    // link it
-    $text = preg_replace("/(^|[\n ])([\w]*?)((ht|f)tp(s)?:\/\/[\w]+[^ \,\"\n\r\t<]*)/is", "$1$2<a href=\"$3\" >$3</a>", $text);
-    $text = preg_replace("/(^|[\n ])([\w]*?)((www|ftp)\.[^ \,\"\t\n\r<]*)/is", "$1$2<a href=\"http://$3\" >$3</a>", $text);
-    // twitter it
-    $text = preg_replace("/@(\w+)/", '<a href="http://twitter.com/$1" target="_blank">@$1</a>', $text);
-    $text = preg_replace("/\#(\w+)/", '<a href="http://search.twitter.com/search?q=$1" target="_blank">#$1</a>', $text);
-    return trim($text);
-}
-
-function render_template($controller = "posts", $action = "index")
-{
-    return html("$controller/$action.html.php");
 }
 
 function send_error($error)
@@ -128,6 +40,18 @@ function index()
         return redirect_to('/timeline');
     }
     return tweets();
+}
+
+dispatch('/about', 'about');
+
+function about()
+{
+    global $application;
+    $version = $application->getVersion();
+    if (isAdmin()) {
+        set('hasMenu', true);
+    }
+    return render("<h2>Le Tweeting</h2><p>La Distribution Twitter client. Version $version</p>");
 }
 
 dispatch('/timeline', 'timeline');
@@ -148,7 +72,7 @@ function timeline()
     set('tweets', $tweets);
     set('isTimeline', true);
     set('hasMenu', true);
-    return render_template("posts");
+    return html("posts/index.html.php");
 }
 
 dispatch('/tweets', 'tweets');
@@ -169,19 +93,83 @@ function tweets()
     if (isAdmin()) {
         set('hasMenu', true);
     }
-    return render_template("posts");
+    return html("posts/index.html.php");
 }
 
-dispatch('/feed', 'feed');
+dispatch('/mentions', 'mentions');
 
-function feed()
+if ($accessToken = getAccessToken()) {
+    dispatch('/' . $accessToken->screen_name . '/mentions', 'mentions');
+}
+
+function mentions()
 {
-    $timeline = isAdmin() && getAccessToken() ? 'home_timeline' : 'user_timeline';
-    $params = array('count' => maxItems());
-    $tweets = getStatuses($timeline, $params);
-    set('tweets', $tweets);
-    return xml("posts/index.atom.php", null);
+    if (!getAccessToken()) {
+        return redirect_to('/setup');
+    }
+    $params = array('q' => '@' . screenName() , 'count' => maxItems(), 'result_type' => 'recent');
+    $query = getStatuses('search', $params);
+    set('tweets', $query->results);
+    set('isMentions', true);
+    if (isAdmin()) {
+        set('hasMenu', true);
+    }
+    return html("posts/mentions.html.php");
 }
+
+dispatch_post('/tweet', 'tweet');
+
+function tweet()
+{
+    if (!getAccessToken()) {
+        return redirect_to('/setup');
+    }
+
+    try {
+        postTweet($_POST['status'], $_POST['in_reply_to_status_id']);
+    } catch (Exception $e) {
+        send_error($e);
+    }
+
+    redirect_to('/');
+}
+
+/* Feeds */
+
+if ($accessToken = getAccessToken()) {
+    dispatch('/feed/' . $accessToken->screen_name, 'user_feed');
+    dispatch('/feed/' . $accessToken->screen_name . '/mentions', 'mentions_feed');
+}
+
+dispatch('/feed', 'user_feed');
+dispatch('/feed/timeline', 'home_feed');
+dispatch('/feed/mentions', 'mentions_feed');
+
+function user_feed()
+{
+    $params = array('count' => maxItems());
+    $tweets = getStatuses('user_timeline', $params);
+    set('tweets', $tweets);
+    return xml("posts/index.atom.php", "layouts/default.atom.php");
+}
+
+function home_feed()
+{
+    $params = array('count' => maxItems());
+    $tweets = getStatuses('home_timeline', $params);
+    set('tweets', $tweets);
+    return xml("posts/index.atom.php", "layouts/default.atom.php");
+}
+
+function mentions_feed()
+{
+    $params = array('q' => '@' . screenName() , 'count' => maxItems(), 'result_type' => 'recent');
+    $query = getStatuses('search', $params);
+    set('tweets', $query->results);
+    return xml("posts/mentions.atom.php", "layouts/default.atom.php");
+}
+
+/* Setup */
 
 dispatch('/setup', 'setup');
 

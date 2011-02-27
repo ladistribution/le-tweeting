@@ -1,7 +1,9 @@
+<?xml version="1.0"?>
 <package>
   <id>le-tweeting</id>
   <name>Le Tweeting</name>
-  <version>0.1-10</version>
+  <description>Simple Twitter client for La Distribution</description>
+  <version>0.2-2</version>
   <type>application</type>
   <need>lib-zend-framework</need>
   <need>lib-ld</need>
@@ -9,6 +11,8 @@
   <need>css-h6e-minimal</need>
   <need>css-ld-ui</need>
   <install>
+      <preference type="text" label="Title" name="title" defaultValue="Twitter"/>
+      <preference type="text" label="Path" name="path" defaultValue="twitter"/>
       <preference type="user" label="Administrator" name="administrator" value=""/>
   </install>
   <configuration>
@@ -23,5 +27,6 @@
       <scheme>bars</scheme>
       <scheme>panels</scheme>
   </colors>
-  <link title="Timeline" rel="feed" type="application/atom+xml" href="/feed"/>
+  <link rel="icon" type="image/png" href="/icon.png"/>
+  <link rel="ld-icon" type="image/png" href="/ld-icon.png"/>
 </package>
