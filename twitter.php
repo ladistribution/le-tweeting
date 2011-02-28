@@ -89,9 +89,9 @@ function screenName()
 function maxItems()
 {
     global $application, $configuration;
-    $maxItems = isset($configuration['maxItems']) ? (int)$configuration['maxItems'] : 25;
+    $maxItems = isset($configuration['maxItems']) ? (int)$configuration['maxItems'] : 50;
     if ($maxItems <= 0 || $maxItems >= 200) {
-        $maxItems = 25;
+        $maxItems = 50;
     }
     return $maxItems;
 }
