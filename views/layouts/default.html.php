@@ -27,7 +27,7 @@
 
         <?php Ld_Ui::topNav(); ?>
 
-        <?php if (isAdmin()) : ?>
+        <?php if ($hasForm) : ?>
         <form id="tweet-form" class="tweet-form" method="post" action="<?php echo url_for('tweet') ?>">
         <h3><label for="tweet-status">What's happening?</label></h3>
         <textarea cols="50" rows="3" id="tweet-status" class="tweet-status" name="status"></textarea>
@@ -36,6 +36,7 @@
         </form>
         <?php endif ?>
 
+        <?php if ($hasMenu) : ?>
         <ul class="h6e-tabs">
             <?php if (isAdmin()) : ?>
             <li <?php if (isset($isTimeline)) echo 'class="active"' ?>><a href="<?php echo url_for('timeline') ?>">
@@ -46,15 +47,16 @@
             <li <?php if (isset($isMentions)) echo 'class="active"' ?>><a href="<?php echo url_for(screenName() . '/mentions') ?>">
                 @<?php echo screenName() ?> Mentions</a></li>
         </ul>
+        <?php endif ?>
 
-        <div class="h6e-page-content h6e-block has-tab">
+        <div class="h6e-page-content h6e-block <?php if ($hasMenu) echo ' has-tab' ?>">
             <?php echo $content ?>
         </div>
 
         <div class="h6e-simple-footer">
             Powered by <strong><?php echo $application->getPackage()->getName() ?></strong>
             with the help of <a href="http://www.limonade-php.net/">Limonade</a>
-            via <a href="http://www.ladistribution.net/">La Distribution</a>
+            via <a href="http://ladistribution.net/">La Distribution</a>
         </div>
 
     </div>

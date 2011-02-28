@@ -23,6 +23,8 @@ function before()
     set('site', $site);
     set('application', $application);
     set('configuration', $configuration);
+    set('hasMenu', false);
+    set('hasForm', false);
     layout('layouts/default.html.php');
 }
 
@@ -48,10 +50,7 @@ function about()
 {
     global $application;
     $version = $application->getVersion();
-    if (isAdmin()) {
-        set('hasMenu', true);
-    }
-    return render("<h2>Le Tweeting</h2><p>La Distribution Twitter client. Version $version</p>");
+    return render("<h2>Le Tweeting</h2><p>Simple Twitter client for La Distribution. Version $version</p>");
 }
 
 dispatch('/timeline', 'timeline');
@@ -64,15 +63,20 @@ function timeline()
     if (!isAdmin()) {
         redirect_to('/');
     }
-    $params = array('count' => maxItems());
-    $tweets = getStatuses('home_timeline', $params);
-    if (isset($tweets->error)) {
-        return send_error($tweets->error);
+    try {
+        $params = array('count' => maxItems());
+        $tweets = getStatuses('home_timeline', $params);
+        if (isset($tweets->error)) {
+            return send_error($tweets->error);
+        }
+        set('tweets', $tweets);
+        set('isTimeline', true);
+        set('hasMenu', true);
+        set('hasForm', true);
+        return html("posts/index.html.php");
+    } catch (Exception $e) {
+        return send_error($e);
     }
-    set('tweets', $tweets);
-    set('isTimeline', true);
-    set('hasMenu', true);
-    return html("posts/index.html.php");
 }
 
 dispatch('/tweets', 'tweets');
@@ -86,14 +90,19 @@ function tweets()
     if (!getAccessToken()) {
         return redirect_to('/setup');
     }
-    $params = array('count' => maxItems());
-    $tweets = getStatuses('user_timeline', $params);
-    set('tweets', $tweets);
-    set('isTweets', true);
-    if (isAdmin()) {
-        set('hasMenu', true);
+    try {
+        $params = array('count' => maxItems());
+        $tweets = getStatuses('user_timeline', $params);
+        set('tweets', $tweets);
+        set('isTweets', true);
+        if (isAdmin()) {
+            set('hasMenu', true);
+            set('hasForm', true);
+        }
+        return html("posts/index.html.php");
+    } catch (Exception $e) {
+        return send_error($e);
     }
-    return html("posts/index.html.php");
 }
 
 dispatch('/mentions', 'mentions');
@@ -107,14 +116,19 @@ function mentions()
     if (!getAccessToken()) {
         return redirect_to('/setup');
     }
-    $params = array('q' => '@' . screenName() , 'count' => maxItems(), 'result_type' => 'recent');
-    $query = getStatuses('search', $params);
-    set('tweets', $query->results);
-    set('isMentions', true);
-    if (isAdmin()) {
-        set('hasMenu', true);
+    try {
+        $params = array('q' => '@' . screenName() , 'count' => maxItems(), 'result_type' => 'recent');
+        $query = getStatuses('search', $params);
+        set('tweets', $query->results);
+        set('isMentions', true);
+        if (isAdmin()) {
+            set('hasMenu', true);
+            set('hasForm', true);
+        }
+        return html("posts/mentions.html.php");
+    } catch (Exception $e) {
+        return send_error($e);
     }
-    return html("posts/mentions.html.php");
 }
 
 dispatch_post('/tweet', 'tweet');
@@ -128,7 +142,7 @@ function tweet()
     try {
         postTweet($_POST['status'], $_POST['in_reply_to_status_id']);
     } catch (Exception $e) {
-        send_error($e);
+        return send_error($e);
     }
 
     redirect_to('/');
@@ -203,7 +217,7 @@ function authenticate()
         $consumer = getConsumer();
         $token = $consumer->getRequestToken();
     } catch (Exception $e) {
-        send_error($e);
+        return send_error($e);
     }
 
     $configuration['request_token'] = serialize($token);
