@@ -3,7 +3,7 @@
   <id>le-tweeting</id>
   <name>Le Tweeting</name>
   <description>Simple Twitter client for La Distribution</description>
-  <version>0.2-10</version>
+  <version>0.2-12</version>
   <type>application</type>
   <need>lib-zend-framework</need>
   <need>lib-ld</need>
