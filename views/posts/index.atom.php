@@ -13,7 +13,7 @@ $tweet = isset($entry->retweeted_status) ? $entry->retweeted_status : $entry; ?>
   <ld:username><?php echo $associatedUser['username'] ?></ld:username>
 <?php endif ?>
   <author>
-    <name><?php echo htmlspecialchars($tweet->user->screen_name) ?></name>
+    <name><?php echo htmlspecialchars($tweet->user->name) ?></name>
     <uri>http://twitter.com/<?php echo htmlspecialchars($tweet->user->screen_name) ?></uri>
   </author>
   <ld:type>status</ld:type>
@@ -21,6 +21,7 @@ $tweet = isset($entry->retweeted_status) ? $entry->retweeted_status : $entry; ?>
   <updated><?php echo date("c", strtotime($entry->created_at)) ?></updated>
   <link rel="self" type="application/atom+xml" href=""/>
   <link rel="avatar" href="<?php echo htmlspecialchars($tweet->user->profile_image_url) ?>"/>
+  <link rel="alternate" type="application/xhtml+xml" href="http://twitter.com/<?php echo htmlspecialchars($tweet->user->screen_name) ?>/status/<?php echo htmlspecialchars($tweet->id) ?>"/>
   <activity:verb>http://activitystrea.ms/schema/1.0/post</activity:verb>
   <activity:object-type>http://activitystrea.ms/schema/1.0/note</activity:object-type>
 </entry>

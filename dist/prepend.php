@@ -8,11 +8,10 @@ Zend_Registry::set('application', $application);
 
 $configuration = $application->getConfiguration();
 
-$cacheDirectory = LD_TMP_DIR . '/cache/';
-Ld_Files::createDirIfNotExists($cacheDirectory);
-if (file_exists($cacheDirectory) && is_writable($cacheDirectory)) {
-    $frontendOptions = array('lifetime' => 60, 'automatic_serialization' => true);
-    $backendOptions = array('cache_dir' => $cacheDirectory);
-    $cache = Zend_Cache::factory('Core', 'File', $frontendOptions, $backendOptions);
-    Zend_Registry::set('cache', $cache);
+if (empty($configuration['endpoint'])) {
+    $configuration['endpoint'] = 'http://twitter.com/oauth';
+}
+
+if (Zend_Registry::isRegistered('cache')) {
+    $cache = Zend_Registry::get('cache');
 }

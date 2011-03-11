@@ -11,10 +11,6 @@ function configure()
     global $site, $application;
     option('base_uri',      $site->getPath() . '/' . $application->getPath() );
     option('session',       false);
-    if (define('LD_DEBUG') && constant('LD_DEBUG')) {
-        option('debug',         true);
-        option('env',           ENV_DEVELOPMENT);
-    }
 }
 
 function before()
@@ -25,6 +21,7 @@ function before()
     set('configuration', $configuration);
     set('hasMenu', false);
     set('hasForm', false);
+    set('screenName', getScreenName());
     layout('layouts/default.html.php');
 }
 
@@ -33,6 +30,8 @@ function send_error($error)
     set('error', $error);
     return html("error.html.php");
 }
+
+$screenName = getScreenName();
 
 dispatch('/', 'index');
 
@@ -66,9 +65,6 @@ function timeline()
     try {
         $params = array('count' => maxItems());
         $tweets = getStatuses('home_timeline', $params);
-        if (isset($tweets->error)) {
-            return send_error($tweets->error);
-        }
         set('tweets', $tweets);
         set('isTimeline', true);
         set('hasMenu', true);
@@ -81,8 +77,8 @@ function timeline()
 
 dispatch('/tweets', 'tweets');
 
-if ($accessToken = getAccessToken()) {
-    dispatch('/' . $accessToken->screen_name, 'tweets');
+if ($screenName) {
+    dispatch('/' . $screenName, 'tweets');
 }
 
 function tweets()
@@ -107,8 +103,8 @@ function tweets()
 
 dispatch('/mentions', 'mentions');
 
-if ($accessToken = getAccessToken()) {
-    dispatch('/' . $accessToken->screen_name . '/mentions', 'mentions');
+if ($screenName) {
+    dispatch('/' . $screenName . '/mentions', 'mentions');
 }
 
 function mentions()
@@ -117,7 +113,7 @@ function mentions()
         return redirect_to('/setup');
     }
     try {
-        $params = array('q' => '@' . screenName() , 'count' => maxItems(), 'result_type' => 'recent');
+        $params = array('q' => '@' . getScreenName() , 'count' => maxItems(), 'result_type' => 'recent');
         $query = getStatuses('search', $params);
         set('tweets', $query->results);
         set('isMentions', true);
@@ -150,9 +146,9 @@ function tweet()
 
 /* Feeds */
 
-if ($accessToken = getAccessToken()) {
-    dispatch('/feed/' . $accessToken->screen_name, 'user_feed');
-    dispatch('/feed/' . $accessToken->screen_name . '/mentions', 'mentions_feed');
+if ($screenName) {
+    dispatch('/feed/' . $screenName, 'user_feed');
+    dispatch('/feed/' . $screenName . '/mentions', 'mentions_feed');
 }
 
 dispatch('/feed', 'user_feed');
@@ -177,7 +173,7 @@ function home_feed()
 
 function mentions_feed()
 {
-    $params = array('q' => '@' . screenName() , 'count' => maxItems(), 'result_type' => 'recent');
+    $params = array('q' => '@' . getScreenName() , 'count' => maxItems(), 'result_type' => 'recent');
     $query = getStatuses('search', $params);
     set('tweets', $query->results);
     return xml("posts/mentions.atom.php", "layouts/default.atom.php");

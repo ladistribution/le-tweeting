@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8"/>
-  <title><?php echo $application->getName() ?></title>
+  <title><?php echo $application->getName() ?> | <?php echo $site->getName() ?></title>
 <?php if (defined('LD_COMPRESS_CSS') && constant('LD_COMPRESS_CSS')) : ?>
   <link href="<?php echo Ld_Ui::getCssUrl('/h6e-minimal/h6e-minimal.compressed.css', 'h6e-minimal') ?>" rel="stylesheet" type="text/css"/>
   <link href="<?php echo Ld_Ui::getCssUrl('/ld-ui/ld-ui.compressed.css', 'ld-ui') ?>" rel="stylesheet" type="text/css"/>
@@ -15,6 +15,7 @@
 <?php endif ?>
   <link href="<?php echo $application->getAbsoluteUrl('/css/le-tweeting.css') ?>" rel="stylesheet" type="text/css"/>
   <script type="text/javascript" src="<?php echo Ld_Ui::getJsUrl('/jquery/jquery.js', 'js-jquery') ?>"></script>
+  <script type="text/javascript" src="<?php echo Ld_Ui::getJsUrl('/ld/ld.js', 'lib-admin') ?>"></script>
   <script type="text/javascript" src="<?php echo $application->getAbsoluteUrl('/js/le-tweeting.js') ?>"></script>
 </head>
 <body class="ld-layout h6e-layout">
@@ -42,10 +43,10 @@
             <li <?php if (isset($isTimeline)) echo 'class="active"' ?>><a href="<?php echo url_for('timeline') ?>">
                 Home Timeline</a></li>
             <?php endif ?>
-            <li <?php if (isset($isTweets)) echo 'class="active"' ?>><a href="<?php echo url_for(screenName()) ?>">
-                @<?php echo screenName() ?> Timeline</a></li>
-            <li <?php if (isset($isMentions)) echo 'class="active"' ?>><a href="<?php echo url_for(screenName() . '/mentions') ?>">
-                @<?php echo screenName() ?> Mentions</a></li>
+            <li <?php if (isset($isTweets)) echo 'class="active"' ?>><a href="<?php echo url_for($screenName) ?>">
+                @<?php echo $screenName ?> Timeline</a></li>
+            <li <?php if (isset($isMentions)) echo 'class="active"' ?>><a href="<?php echo url_for($screenName . '/mentions') ?>">
+                @<?php echo $screenName ?> Mentions</a></li>
         </ul>
         <?php endif ?>
 
@@ -54,7 +55,7 @@
         </div>
 
         <div class="h6e-simple-footer">
-            Powered by <strong><?php echo $application->getPackage()->getName() ?></strong>
+            Powered by <strong>Le Tweeting</strong>
             with the help of <a href="http://www.limonade-php.net/">Limonade</a>
             via <a href="http://ladistribution.net/">La Distribution</a>
         </div>

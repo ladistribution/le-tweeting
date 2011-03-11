@@ -4,7 +4,7 @@ function getConfig()
 {
     global $application, $configuration;
     $config = array(
-        'siteUrl' => 'http://twitter.com/oauth',
+        'siteUrl' => $configuration['endpoint'],
         'callbackUrl' => $application->getUrl() . 'callback',
         'consumerKey' => $configuration['consumerKey'],
         'consumerSecret' => $configuration['consumerSecret'],
@@ -20,11 +20,46 @@ function getConsumer()
 
 function getAccessToken()
 {
-    global $configuration;
-    if (empty($configuration['access_token'])) {
-        return null;
+    static $accessToken;
+    if (isset($accessToken)) {
+        return $accessToken;
     }
-    return unserialize($configuration['access_token']);
+
+    global $configuration;
+    if (!empty($configuration['access_token'])) {
+        return $accessToken = unserialize($configuration['access_token']);
+    }
+}
+
+function getScreenName()
+{
+    static $screenName;
+    if (isset($screenName)) {
+        return $screenName;
+    }
+
+    if ($accessToken = getAccessToken()) {
+        if ($accessToken->screen_name) {
+            return $screenName = $accessToken->screen_name;
+        }
+        $tweets = getStatuses('user_timeline', array('count' => maxItems()));
+        if (!empty($tweets) && !empty($tweets->error)) {
+            return $screenName = $tweets[0]->user->screen_name;
+        }
+    }
+}
+
+function getApiUrl($timeline = 'friends_timeline')
+{
+    global $configuration;
+    $baseUrl = str_replace('/oauth', '', $configuration['endpoint']);
+    if ($timeline == 'search') {
+        if ($baseUrl == 'http://twitter.com') {
+            return "http://search.twitter.com/search.json";
+        }
+        return $baseUrl . "/search.json";
+    }
+    return $baseUrl . "/statuses/$timeline.json";
 }
 
 function getStatuses($timeline = 'friends_timeline', $params = array())
@@ -37,16 +72,15 @@ function getStatuses($timeline = 'friends_timeline', $params = array())
     if (empty($tweets)) {
         $token = getAccessToken();
         $client = $token->getHttpClient( getConfig() );
-        if ($timeline == 'search') {
-            $client->setUri("http://search.twitter.com/search.json");
-        } else {
-            $client->setUri("http://twitter.com/statuses/$timeline.json");
-        }
+        $client->setUri( getApiUrl($timeline) );
         foreach ($params as $key => $value) {
             $client->setParameterGet($key, $value);
         }
         $response = $client->request(Zend_Http_Client::GET);
         $tweets = Zend_Json::decode($response->getBody(), Zend_Json::TYPE_OBJECT);
+        if (isset($tweets->error)) {
+            throw new Exception($tweets->error);
+        }
         if ($cache) {
             $cache->save($tweets, /* id */ null, array('statuses'));
         }
@@ -59,7 +93,7 @@ function postTweet($status = '', $in_reply_to = null)
     global $cache;
     $token = getAccessToken();
     $client = $token->getHttpClient( getConfig() );
-    $client->setUri("http://twitter.com/statuses/update.json");
+    $client->setUri( getApiUrl('update') );
     $data = array('status' => $status);
     if (!empty($in_reply_to)) {
         $data['in_reply_to_status_id'] = $in_reply_to;
@@ -79,16 +113,9 @@ function isAdmin()
     return Ld_Auth::isAuthenticated() && $application->getUserRole() == 'administrator';
 }
 
-function screenName()
-{
-    if ($accessToken = getAccessToken()) {
-        return $accessToken->screen_name;
-    }
-}
-
 function maxItems()
 {
-    global $application, $configuration;
+    global $configuration;
     $maxItems = isset($configuration['maxItems']) ? (int)$configuration['maxItems'] : 50;
     if ($maxItems <= 0 || $maxItems >= 200) {
         $maxItems = 50;

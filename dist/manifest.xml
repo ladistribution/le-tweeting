@@ -3,7 +3,7 @@
   <id>le-tweeting</id>
   <name>Le Tweeting</name>
   <description>Simple Twitter client for La Distribution</description>
-  <version>0.2-12</version>
+  <version>0.2-17</version>
   <type>application</type>
   <need>lib-zend-framework</need>
   <need>lib-ld</need>
@@ -14,12 +14,17 @@
       <preference type="text" label="Title" name="title" defaultValue="Twitter"/>
       <preference type="text" label="Path" name="path" defaultValue="twitter"/>
       <preference type="user" label="Administrator" name="administrator" value=""/>
+      <!--
+      <preference type="text" label="API Endpoint" name="endpoint" defaultValue="http://twitter.com/oauth"/>
+      -->
+      <preference type="hidden" name="endpoint" value="http://twitter.com/oauth"/>
   </install>
   <configuration>
       <preference type="text" label="Application Name" name="name"/>
+      <preference type="text" label="API Endpoint" name="endpoint"/>
       <preference type="text" label="Consumer Key" name="consumerKey"/>
       <preference type="text" label="Consumer Secret" name="consumerSecret"/>
-      <preference type="user" label="Associate with User" name="associatedUser" value=""/>
+      <preference type="user" label="Associate with User" name="associatedUser"/>
       <preference type="range" label="Items per page" name="maxItems" min="5" max="200" step="5" defaultValue="50"/>
   </configuration>
   <colors>
