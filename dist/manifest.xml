@@ -24,7 +24,9 @@
       <preference type="text" label="API Endpoint" name="endpoint"/>
       <preference type="text" label="Consumer Key" name="consumerKey"/>
       <preference type="text" label="Consumer Secret" name="consumerSecret"/>
+      <!--
       <preference type="user" label="Associate with User" name="associatedUser"/>
+      -->
       <preference type="range" label="Items per page" name="maxItems" min="5" max="200" step="5" defaultValue="50"/>
   </configuration>
   <colors>
